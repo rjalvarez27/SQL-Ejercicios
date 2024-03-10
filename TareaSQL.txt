@@ -1,0 +1,167 @@
+---------- EJERCICIO PARA PRACTICAR
+
+Este ejercicio tendra un enfoque a un sistema de gestion de tienda.
+
+1. Crear una base de datos llamada : tienda
+
+    CREATE DATABASE tienda;
+   
+    USE tienda;
+
+- Crear 4 tablas dentro de la base de datos:
+
+NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
+
+    - Tabla 1: usuarios (id, nombre, apellido, edad, email, contrasena, rol, fechaCreacion, fechaActualizacion).
+     
+    CREATE TABLE usuarios (
+    id_user INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    edad  INT,
+    email VARCHAR(255) UNIQUE,
+    contrasena VARCHAR(100),
+    rol VARCHAR(15) DEFAULT 'user',
+    fechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fechaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+      
+    - Tabla 2: categorias (id, nombre, tipo, fechaCreacion, fecha_actualizacion).
+    
+    CREATE TABLE categorias (
+    id_categories INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    tipo VARCHAR(100),
+    fechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fechaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+
+    - Tabla 3: productos (id, nombre_producto, precio, stock, categoria, fechaCreacion, fechaActualizacion).
+     
+    CREATE TABLE productos (
+    id_product INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nombre_producto VARCHAR(100),
+    usuarioid INT DEFAULT 1,
+    precio FLOAT,
+    stock INT,
+    categoria INT,
+    fechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fechaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (categoria) REFERENCES categorias(id_categories)
+    );
+   
+    - Tabla 4: ventas (id, producto_id, usuario_id, cantidad, precio_total, fechaCreacion, fechaActualizacion).
+    
+    CREATE TABLE ventas (
+    id_sale INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    producto_id INT,
+    usuario_id INT,
+    cantidad INT,
+    precio_total FLOAT NOT NULL DEFAULT 0.0,
+    fechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fechaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (producto_id) REFERENCES productos(id_product),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id_user)
+    );
+
+    /////////////////////////////////////////TODO BIEN /////////////////////////////////// HASTA AQUI ............
+    
+    //TRIGGER VENTAS(PRECIO TOTAL) Y BAJAR STOCK 
+
+    DELIMITER //
+
+   --- precio total
+    
+   CREATE TRIGGER total_ventas AFTER INSERT ON ventas FOR EACH ROW
+   BEGIN
+     DECLARE precio_unidad FLOAT
+   SET precio_unidad = (SELECT precio FROM productos WHERE id_product = NEW.producto_id)
+   SET NEW.precio_total = NEW.cantidad * precio_unidad
+   END;
+
+   --- salida de stock
+   CREATE TRIGGER salida_stock AFTER INSERT on ventas FOR EACH ROW
+   BEGIN
+   DECLARE stock_exist INT;
+   DECLARE stock_new
+   SET stock_exist = (SELECT stock FROM productos)
+   SET stock_new = (SELECT stock_n - cantidad FROM ventas WHERE producto_id = NEW.id_product)
+   IF stock_new > 0 
+      UPDATE productos SET stock = stock_new WHERE producto_id = NEW.id_product;
+  ELSE 
+      UPDATE productos SET stock = 0 WHERE producto_id = NEW.id_product;
+   END;
+
+
+
+  
+   
+    DELIMITER ;
+
+2. Insertar datos:
+
+    - Insertar 5 usuarios (1 admin)
+
+      INSERT INTO usuarios (nombre, apellido, edad, email, contrasena, rol) VALUES
+    ( 'Lola', 'Mento', 65 , 'Lola@gmail.com', 123456, 'admin'),
+    ( 'Elsa', 'Pato', 45 , 'Elsa@gmail.com', 123456, 'user'),
+    ('Aquiles', 'Brinco', 45 , 'Aquiles@gmail.com', 123456, 'user'),
+    ('Luz', 'Roja', 25 , 'Luz@gmail.com', 123456, 'user'),
+    ( 'Sole', 'Dolio', 17 , 'Sole@gmail.com', 123456, 'user');
+
+    - Registrar 3 categorias
+    
+    INSERT INTO categorias (nombre, tipo) VALUES
+    ('hogar','cocina'),
+    ('servicios', 'reparaciones'),
+    ('herramientas','pintura')
+
+
+    - Registrar 6 productos (2 por cada categoria)
+
+    INSERT INTO productos (nombre_producto, precio, stock, categoria) VALUES
+    ('lavadora', 450 , 20, 1),
+    ('cocina', 500 , 15, 1),
+    ('reparacion_calentador', 40 , 20, 2),
+    ('reparacion_electrica', 40 , 20, 2),
+    ('pintura_caucho', 45 , 30, 3),
+    ('pintura_esmalte', 40 , 30, 3)
+
+    - Registrar 10 ventas
+      
+    INSERT INTO ventas (producto_id, usuario_id, cantidad) VALUES 
+    (1,2,1),
+    (2,3,5),
+    (2,5,10),
+    (3,4,5),
+    (4,2,10),
+    (5,4,15),
+    (6,5,15),
+    (5,3,15),
+    (4,2,6),
+    (6,4,15);
+
+
+
+3. Consultas a realizar 
+
+    - Seleccionar usuarios con un rol especifico.
+      
+      SELECT * FROM usuarios WHERE rol = 'admin';
+
+    - Obtener el stock disponible de todos los productos.
+   
+      SELECT sum(stock) AS stock_total FROM productos;
+
+    - Calcular el total de ventas por usuario_id 
+
+      
+    - Actualizar el precio de un producto mayor a 100 y aplicar descuento del 10%.
+      
+      UPDATE productos 
+      SET precio = 500 - ( 500 * 0.10) 
+      WHERE id = 2;
+     
+    - Eliminar ventas de un producto agotado (con un stock de 0).
+
+      
