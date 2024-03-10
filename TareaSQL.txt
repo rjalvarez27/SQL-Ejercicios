@@ -80,23 +80,39 @@ NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
    END;
 
    --- salida de stock
+   ////////1 Intento ---------------------------
+
    CREATE TRIGGER salida_stock AFTER INSERT on ventas FOR EACH ROW
    BEGIN
-   DECLARE stock_exist INT;
-   DECLARE stock_new
+   DECLARE stock_exist INT
+   DECLARE stock_new INT
    SET stock_exist = (SELECT stock FROM productos)
    SET stock_new = (SELECT stock_n - cantidad FROM ventas WHERE producto_id = NEW.id_product)
    IF stock_new > 0 
       UPDATE productos SET stock = stock_new WHERE producto_id = NEW.id_product;
-  ELSE 
+   ELSE 
       UPDATE productos SET stock = 0 WHERE producto_id = NEW.id_product;
    END;
+  /////////////// 2 intento ---------------------
 
+  CREATE TRIGGER salida_stock ON ventas FOR INSERT AS
+  BEGIN
+    DECLARE stock_exist INT;
+    DECLARE stock_new  INT;
 
+  SET stock_exist = (SELECT stock FROM productos)
+  SET stock_new = (SELECT cantidad FROM ventas)
 
-  
-   
+  UPDATE productos
+  SET stock_exist = stock_exist - stock_new
+  WHERE id_product LIKE @productos 
+
+  END;
+
     DELIMITER ;
+
+
+    /////////////////////////////////////////TRIGGER no funcionan /////////////////////////////////// ............
 
 2. Insertar datos:
 
