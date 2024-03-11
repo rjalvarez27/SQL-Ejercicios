@@ -64,56 +64,6 @@ NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id_user)
     );
 
-    /////////////////////////////////////////TODO BIEN /////////////////////////////////// HASTA AQUI ............
-    
-    //TRIGGER VENTAS(PRECIO TOTAL) Y BAJAR STOCK 
-
-    DELIMITER //
-
-   --- precio total
-    
-   CREATE TRIGGER total_ventas AFTER INSERT ON ventas FOR EACH ROW
-   BEGIN
-     DECLARE precio_unidad FLOAT
-   SET precio_unidad = (SELECT precio FROM productos WHERE id_product = NEW.producto_id)
-   SET NEW.precio_total = NEW.cantidad * precio_unidad
-   END;
-
-   --- salida de stock
-   ////////1 Intento ---------------------------
-
-   CREATE TRIGGER salida_stock AFTER INSERT on ventas FOR EACH ROW
-   BEGIN
-   DECLARE stock_exist INT
-   DECLARE stock_new INT
-   SET stock_exist = (SELECT stock FROM productos)
-   SET stock_new = (SELECT stock_n - cantidad FROM ventas WHERE producto_id = NEW.id_product)
-   IF stock_new > 0 
-      UPDATE productos SET stock = stock_new WHERE producto_id = NEW.id_product;
-   ELSE 
-      UPDATE productos SET stock = 0 WHERE producto_id = NEW.id_product;
-   END;
-  /////////////// 2 intento ---------------------
-
-  CREATE TRIGGER salida_stock ON ventas FOR INSERT AS
-  BEGIN
-    DECLARE stock_exist INT;
-    DECLARE stock_new  INT;
-
-  SET stock_exist = (SELECT stock FROM productos)
-  SET stock_new = (SELECT cantidad FROM ventas)
-
-  UPDATE productos
-  SET stock_exist = stock_exist - stock_new
-  WHERE id_product LIKE @productos 
-
-  END;
-
-    DELIMITER ;
-
-
-    /////////////////////////////////////////TRIGGER no funcionan /////////////////////////////////// ............
-
 2. Insertar datos:
 
     - Insertar 5 usuarios (1 admin)
@@ -145,17 +95,17 @@ NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
 
     - Registrar 10 ventas
       
-    INSERT INTO ventas (producto_id, usuario_id, cantidad) VALUES 
-    (1,2,1),
-    (2,3,5),
-    (2,5,10),
-    (3,4,5),
-    (4,2,10),
-    (5,4,15),
-    (6,5,15),
-    (5,3,15),
-    (4,2,6),
-    (6,4,15);
+    INSERT INTO ventas (producto_id, usuario_id, cantidad, precio_total) VALUES 
+    (1,2,1, 45),
+    (2,3,5, 50),
+    (2,5,10, 50),
+    (3,4,5, 50),
+    (4,2,10, 30),
+    (5,4,15, 20),
+    (6,5,15, 15),
+    (5,3,15, 20),
+    (4,2,6, 25),
+    (6,4,15, 30);
 
 
 
@@ -170,8 +120,9 @@ NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
       SELECT sum(stock) AS stock_total FROM productos;
 
     - Calcular el total de ventas por usuario_id 
+   
+     SELECT usuario_id, sum(precio_total) AS total_ventas FROM ventas GROUP BY usuario_id
 
-      
     - Actualizar el precio de un producto mayor a 100 y aplicar descuento del 10%.
       
       UPDATE productos 
@@ -180,4 +131,4 @@ NOTA: Recuerden utilizar PRIMARY KEY, FOREIGN y el AUTO_INCREMENT.
      
     - Eliminar ventas de un producto agotado (con un stock de 0).
 
-      
+      DELETE FROM ventas WHERE producto_id IN ( SELECT id_product FROM productos WHERE stock = 0)
